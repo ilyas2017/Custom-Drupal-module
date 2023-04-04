@@ -1,0 +1,50 @@
+<?php
+
+/**
+ * @file
+ * EM News Module file.
+ */
+
+use Drupal\Core\Access\AccessResultForbidden;
+use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Session\AccountInterface;
+use Drupal\em_news\Plugin\views\filter\FilterContentCurrentEntreprise;
+use Drupal\node\NodeInterface;
+use Drupal\user\Entity\User;
+
+/**
+ * Implements hook_form_alter().
+ *
+ * Hide entreprise field for content type news if the current
+ * user has role 'admin_rh'.
+ *
+ * Set current entreprise to entreprise field reference of news content type
+ */
+function em_news_form_alter(&$form, FormStateInterface $form_state, $form_id) {
+  $user = User::load(\Drupal::currentUser()->id());
+  if (in_array(FilterContentCurrentEntreprise::ADMIN_RH_ROLE, $user->getRoles())) {
+    if (in_array($form_id, ['node_news_form', 'node_news_edit_form'])) {
+      $entreprise = \Drupal::service('em_entreprise.services')
+        ->getEntrepriseForCurrentUser();
+      $form['field_entreprise']['#type'] = 'hidden';
+      $form['field_entreprise']['widget'][0]['target_id']['#default_value'] = $entreprise;
+      $form['revision_information']['#access'] = FALSE;
+      $form['actions']['preview']['#access'] = FALSE;
+    }
+  }
+}
+
+/**
+ * Implements hook_node_access().
+ *
+ * Prevent access news nodes.
+ */
+function em_news_node_access(NodeInterface $node, $op, AccountInterface $account) {
+  if ($node->bundle() == 'news' || $node->bundle() == 'push_information') {
+    if ($op == 'view') {
+      $access = new AccessResultForbidden();
+      return $access->addCacheableDependency($node);
+    }
+  }
+}
+

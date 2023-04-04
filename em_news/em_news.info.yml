@@ -1,0 +1,5 @@
+name: 'EM news'
+type: module
+core_version_requirement: ^8.8 || ^9
+package: 'Custom'
+description: 'Provides custom module for news'
